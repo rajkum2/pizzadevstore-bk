@@ -6,7 +6,13 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "migrate": "node migrations/migration-runner.js up",
+    "migrate:rollback": "node migrations/migration-runner.js down",
+    "seed": "node seeders/seeder-runner.js seed",
+    "seed:clear": "node seeders/seeder-runner.js clear",
+    "seed:users": "node seeders/seeder-runner.js seed users.seeder.js",
+    "seed:orders": "node seeders/seeder-runner.js seed orders.seeder.js"
   },
   "keywords": ["pizza", "express", "mongodb", "stripe"],
   "author": "",
@@ -19,7 +25,8 @@
     "dotenv": "^16.3.1",
     "cors": "^2.8.5",
     "express-rate-limit": "^6.11.2",
-    "stripe": "^14.5.0"
+    "stripe": "^14.5.0",
+    "swagger-ui-express": "^4.6.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
