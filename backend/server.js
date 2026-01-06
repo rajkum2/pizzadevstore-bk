@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 const connectDB = require('./config/db');
 
 const authRoutes = require('./routes/auth');
@@ -22,10 +24,21 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'New York Pizza API Documentation'
+}));
+
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 app.get('/', (req, res) => {
   res.json({
-    message: 'Pizza Dashboard API',
+    message: 'New York Pizza Dashboard API',
     version: '1.0.0',
+    documentation: '/api-docs',
     endpoints: {
       auth: '/api/auth',
       orders: '/api/orders',

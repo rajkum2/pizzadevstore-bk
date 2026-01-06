@@ -14,18 +14,24 @@
     "seed:users": "node seeders/seeder-runner.js seed users.seeder.js",
     "seed:orders": "node seeders/seeder-runner.js seed orders.seeder.js"
   },
-  "keywords": ["pizza", "express", "mongodb", "stripe"],
+  "keywords": [
+    "pizza",
+    "express",
+    "mongodb",
+    "stripe"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^7.6.3",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "dotenv": "^16.3.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-rate-limit": "^6.11.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.6.3",
     "stripe": "^14.5.0",
+    "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3"
   },
   "devDependencies": {

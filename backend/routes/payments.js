@@ -4,6 +4,57 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 
+/**
+ * @swagger
+ * /api/payments/create-checkout-session:
+ *   post:
+ *     summary: Create a Stripe checkout session for an order
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 description: The ID of the order to create checkout session for
+ *                 example: 507f1f77bcf86cd799439011
+ *     responses:
+ *       200:
+ *         description: Checkout session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 sessionId:
+ *                   type: string
+ *                   description: Stripe checkout session ID
+ *                   example: cs_test_a1b2c3d4e5f6g7h8i9j0
+ *                 url:
+ *                   type: string
+ *                   description: Stripe checkout URL to redirect user
+ *                   example: https://checkout.stripe.com/pay/cs_test_a1b2c3d4e5f6g7h8i9j0
+ *       400:
+ *         description: Bad request - Order ID required or order already paid
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Not authorized for this order
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error creating checkout session
+ */
 router.post('/create-checkout-session', protect, async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -64,6 +115,35 @@ router.post('/create-checkout-session', protect, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/payments/webhook:
+ *   post:
+ *     summary: Stripe webhook endpoint for payment events
+ *     tags: [Payments]
+ *     description: This endpoint receives webhooks from Stripe when payment events occur. Used internally by Stripe - not for direct API calls.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Stripe webhook event payload
+ *     responses:
+ *       200:
+ *         description: Webhook received and processed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 received:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Webhook signature verification failed
+ */
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
