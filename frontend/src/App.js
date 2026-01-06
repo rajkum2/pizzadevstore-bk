@@ -1,9 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import theme from './theme';
 
 import ProtectedRoute from './components/shared/ProtectedRoute';
 
@@ -23,9 +26,11 @@ import PaymentsList from './components/admin/PaymentsList';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <AuthProvider>
+          <CartProvider>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
@@ -127,9 +132,10 @@ function App() {
             draggable
             pauseOnHover
           />
-        </CartProvider>
-      </AuthProvider>
-    </Router>
+          </CartProvider>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

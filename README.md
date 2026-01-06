@@ -1,6 +1,6 @@
-# Pizza Dashboard - Full Stack Application
+# New York Pizza Dashboard - Full Stack Application
 
-A complete pizza ordering system with payment tracking using Stripe. Users can sign up, browse pizzas, place orders, and make payments. Admins can manage users, orders, and view payment history through a comprehensive dashboard.
+A professional, enterprise-level pizza ordering system with payment tracking using Stripe. Users can sign up, browse authentic New York-style pizzas, place orders, and make payments. Admins can manage users, orders, and view payment history through a comprehensive dashboard with modern, polished design.
 
 ## Tech Stack
 

@@ -9,8 +9,10 @@ import {
   Button,
   Typography,
   Paper,
-  CircularProgress
+  CircularProgress,
+  Divider
 } from '@mui/material';
+import LocalPizzaIcon from '@mui/icons-material/LocalPizza';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -51,23 +53,52 @@ const Login = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        minHeight="100vh"
-        py={4}
-      >
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" align="center" gutterBottom>
-            Pizza Dashboard
-          </Typography>
-          <Typography variant="h5" align="center" gutterBottom color="primary">
-            Login
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #d32f2f 0%, #f57c00 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 4
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={8}
+          sx={{
+            p: 5,
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <Box textAlign="center" mb={3}>
+            <LocalPizzaIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #d32f2f 0%, #f57c00 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1
+              }}
+            >
+              New York Pizza
+            </Typography>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Dashboard
+            </Typography>
+          </Box>
+
+          <Divider sx={{ mb: 3 }} />
+
+          <Typography variant="h5" align="center" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+            Welcome Back
           </Typography>
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+          <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="Email"
@@ -77,6 +108,7 @@ const Login = () => {
               margin="normal"
               required
               autoFocus
+              variant="outlined"
             />
 
             <TextField
@@ -87,6 +119,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
               required
+              variant="outlined"
             />
 
             <Button
@@ -94,24 +127,37 @@ const Login = () => {
               fullWidth
               variant="contained"
               size="large"
-              sx={{ mt: 3, mb: 2 }}
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                fontSize: '1.1rem',
+                fontWeight: 600
+              }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Login'}
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
             </Button>
 
-            <Box textAlign="center">
-              <Typography variant="body2">
+            <Box textAlign="center" mt={2}>
+              <Typography variant="body2" color="text.secondary">
                 Don't have an account?{' '}
-                <Link to="/signup" style={{ textDecoration: 'none' }}>
-                  Sign up
+                <Link
+                  to="/signup"
+                  style={{
+                    color: '#d32f2f',
+                    textDecoration: 'none',
+                    fontWeight: 600
+                  }}
+                >
+                  Create Account
                 </Link>
               </Typography>
             </Box>
           </Box>
         </Paper>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 
