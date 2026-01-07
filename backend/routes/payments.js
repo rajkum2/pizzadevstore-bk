@@ -144,7 +144,7 @@ router.post('/create-checkout-session', protect, async (req, res) => {
  *       400:
  *         description: Webhook signature verification failed
  */
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
