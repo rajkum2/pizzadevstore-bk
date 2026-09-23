@@ -1,3 +1,4 @@
+const supabase = require('../config/supabase');
 const User = require('../models/User');
 
 /**
@@ -40,17 +41,16 @@ module.exports = {
     for (const userData of users) {
       try {
         // Check if user already exists
-        const existingUser = await User.findOne({ email: userData.email });
-        
+        const existingUser = await User.findByEmail(userData.email);
+
         if (existingUser) {
           console.log(`  ⚠ User ${userData.email} already exists, skipping...`);
           skippedCount++;
           continue;
         }
 
-        // Create new user (password will be hashed by the pre-save hook)
-        const user = new User(userData);
-        await user.save();
+        // Create new user (password is hashed by the model)
+        await User.create(userData);
         console.log(`  ✓ Created user: ${userData.email} (${userData.role})`);
         createdCount++;
       } catch (error) {
@@ -70,11 +70,15 @@ module.exports = {
       'jane@example.com'
     ];
 
-    const result = await User.deleteMany({ email: { $in: emailsToRemove } });
-    console.log(`  ✓ Removed ${result.deletedCount} test users`);
-    
+    const { error, count } = await supabase
+      .from('users')
+      .delete({ count: 'exact' })
+      .in('email', emailsToRemove);
+
+    if (error) throw error;
+    console.log(`  ✓ Removed ${count} test users`);
+
     // Optionally remove admin too (uncomment if needed)
-    // await User.deleteOne({ email: 'admin@pizza.com' });
+    // await supabase.from('users').delete().eq('email', 'admin@pizza.com');
   }
 };
-

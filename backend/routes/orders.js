@@ -121,7 +121,7 @@ router.post('/', protect, async (req, res) => {
  */
 router.get('/', protect, async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const orders = await Order.findByUserId(req.user._id);
 
     res.json({
       success: true,
