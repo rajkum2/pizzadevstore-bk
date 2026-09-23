@@ -6,12 +6,13 @@ A professional, enterprise-level pizza ordering system with payment tracking usi
 
 ### Backend
 - **Node.js** (v18+) with **Express.js** (v4+)
-- **MongoDB Atlas** - Cloud database
-- **Mongoose** (v7+) - ODM for MongoDB
+- **Supabase** (PostgreSQL) - Database, run locally via Supabase CLI + Docker
+- **@supabase/supabase-js** (v2.45) - Database client
 - **JWT** (jsonwebtoken v9+) - Authentication
 - **bcryptjs** (v2+) - Password hashing
-- **Stripe** (v10+) - Payment processing
+- **Stripe** (v14+) - Payment processing
 - **express-rate-limit** - Rate limiting for auth routes
+- **swagger-jsdoc / swagger-ui-express** - API documentation at `/api-docs`
 
 ### Frontend
 - **React.js** (v18+)
@@ -27,11 +28,16 @@ A professional, enterprise-level pizza ordering system with payment tracking usi
 
 ```
 pizza-dashboard/
+├── supabase/
+│   ├── migrations/
+│   │   └── 20260923000001_init_schema.sql   # users + orders tables
+│   └── config.toml                          # local Supabase config
 ├── backend/
 │   ├── config/
-│   │   └── db.js
+│   │   ├── supabase.js                      # Supabase client (service key)
+│   │   └── swagger.js
 │   ├── models/
-│   │   ├── User.js
+│   │   ├── User.js                          # data access (Supabase queries)
 │   │   └── Order.js
 │   ├── routes/
 │   │   ├── auth.js
@@ -40,6 +46,10 @@ pizza-dashboard/
 │   │   └── admin.js
 │   ├── middleware/
 │   │   └── auth.js
+│   ├── seeders/
+│   │   ├── seeder-runner.js
+│   │   ├── users.seeder.js
+│   │   └── orders.seeder.js
 │   ├── server.js
 │   ├── package.json
 │   ├── .env
@@ -69,48 +79,49 @@ pizza-dashboard/
 
 ### Prerequisites
 
-- Node.js v18 or higher
-- npm or yarn
-- MongoDB Atlas account
-- Stripe account (test mode)
+- **Node.js** v18 or higher
+- **Docker Desktop** - must be installed and running (Supabase local runs in containers)
+- **Supabase CLI** - install with `npm install -g supabase` (or `scoop install supabase` on Windows)
+- **Stripe account** (test mode)
 
 ---
 
-### 1. MongoDB Atlas Setup
+### 1. Supabase Setup (Local Database)
 
-1. **Create Account**
-   - Go to [mongodb.com](https://www.mongodb.com/)
-   - Sign up for a free account
-   - Click "Build a Database"
+The database runs **locally** on your machine via the Supabase CLI — no cloud account needed.
 
-2. **Create Cluster**
-   - Choose "Free" tier (M0)
-   - Select your preferred cloud provider and region
-   - Click "Create Cluster"
+1. **Start Docker Desktop** and leave it running
 
-3. **Configure Database Access**
-   - Go to "Database Access" in left sidebar
-   - Click "Add New Database User"
-   - Choose "Password" authentication
-   - Create username and password (save these!)
-   - Set role to "Atlas Admin"
-   - Click "Add User"
+2. **Start the local Supabase stack** (from the project root):
+   ```bash
+   supabase start
+   ```
+   First run downloads Docker images (~1-2 GB) and may take a few minutes.
 
-4. **Configure Network Access**
-   - Go to "Network Access" in left sidebar
-   - Click "Add IP Address"
-   - Click "Allow Access from Anywhere" (0.0.0.0/0)
-   - **Note:** For production, restrict to specific IPs
-   - Click "Confirm"
+3. **Copy the credentials** printed at the end:
+   - `Project URL` (e.g. `http://127.0.0.1:54321`)
+   - `Secret` key (`sb_secret_...`) — backend only, never expose to the frontend
+   - (`Publishable` key is the frontend-safe key; this project doesn't use it)
 
-5. **Get Connection String**
-   - Go to "Database" in left sidebar
-   - Click "Connect" on your cluster
-   - Choose "Connect your application"
-   - Copy the connection string
-   - It looks like: `mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
-   - Replace `<username>` and `<password>` with your credentials
-   - Add database name after `.net/`: `mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/pizzadb?retryWrites=true&w=majority&appName=Cluster0`
+   You can see them again anytime with:
+   ```bash
+   supabase status
+   ```
+
+4. **Apply the database schema** (creates `users` and `orders` tables from `supabase/migrations/`):
+   ```bash
+   supabase db reset
+   ```
+
+5. **Optional:** open **Supabase Studio** (database dashboard) at http://localhost:54323 to browse tables.
+
+Useful commands:
+
+```bash
+supabase status     # show running services + credentials
+supabase stop       # stop the stack (data is kept)
+supabase db reset   # wipe DB and re-apply all migrations
+```
 
 ---
 
@@ -128,13 +139,11 @@ pizza-dashboard/
    - Copy your "Secret key" (starts with `sk_test_`)
 
 3. **Set Up Webhook (Optional for local testing)**
-   - Go to [dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks)
-   - Click "Add endpoint"
-   - Enter URL: `http://localhost:5000/api/payments/webhook`
-   - Select event: `checkout.session.completed`
-   - Click "Add endpoint"
-   - Copy the "Signing secret" (starts with `whsec_`)
-   - **Note:** For local testing, you can use Stripe CLI for webhooks
+   - For local testing, use the [Stripe CLI](https://docs.stripe.com/stripe-cli):
+     ```bash
+     stripe listen --forward-to http://localhost:3008/api/payments/webhook
+     ```
+   - Copy the "Signing secret" it prints (starts with `whsec_`)
 
 ---
 
@@ -159,8 +168,9 @@ pizza-dashboard/
    - Edit `.env` with your values:
    ```env
    NODE_ENV=development
-   PORT=5000
-   MONGODB_URI=mongodb+srv://youruser:yourpass@cluster0.xxxxx.mongodb.net/pizzadb?retryWrites=true&w=majority&appName=Cluster0
+   PORT=3008
+   SUPABASE_URL=http://127.0.0.1:54321
+   SUPABASE_SECRET_KEY=sb_secret_your_local_secret_key
    JWT_SECRET=your_super_secret_jwt_key_change_this_12345
    JWT_EXPIRE=7d
    STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
@@ -168,12 +178,21 @@ pizza-dashboard/
    FRONTEND_URL=http://localhost:3000
    ```
 
-4. **Start the server**
+   `SUPABASE_URL` and `SUPABASE_SECRET_KEY` come from `supabase status` (step 1).
+
+4. **Seed the database** (creates admin + test users and sample orders):
    ```bash
-   npm start
+   npm run seed
    ```
 
-   Server should start on `http://localhost:5000`
+5. **Start the server**
+   ```bash
+   npm start
+   # or with auto-restart on changes:
+   npm run dev
+   ```
+
+   Server starts on `http://localhost:3008` — API docs at `http://localhost:3008/api-docs`
 
 ---
 
@@ -197,7 +216,7 @@ pizza-dashboard/
 
    - Edit `.env` with your values:
    ```env
-   REACT_APP_API_URL=http://localhost:5000/api
+   REACT_APP_API_URL=http://localhost:3008/api
    REACT_APP_STRIPE_PUBLIC_KEY=pk_test_your_stripe_publishable_key
    ```
 
@@ -206,21 +225,38 @@ pizza-dashboard/
    npm start
    ```
 
-   Frontend should open at `http://localhost:3000`
+   Frontend opens at `http://localhost:3000`
 
 ---
 
-## Creating an Admin User
+## Seeded Accounts
 
-Since there's no admin signup in the UI, you need to create an admin user manually:
+Running `npm run seed` (backend) creates:
 
-### Method 1: Using the API directly
+| Email | Password | Role |
+|---|---|---|
+| `admin@pizza.com` | `admin123` | admin |
+| `user1@example.com` | `user123` | user |
+| `user2@example.com` | `user123` | user |
+| `john@example.com` | `password123` | user |
+| `jane@example.com` | `password123` | user |
 
-1. Start the backend server
-2. Use a tool like Postman or curl:
+Plus 6 sample orders in various payment states.
+
+Other seeder commands:
 
 ```bash
-curl -X POST http://localhost:5000/api/auth/signup \
+npm run seed:clear    # remove all seeded data
+npm run seed:users    # seed only users
+npm run seed:orders   # seed only orders
+```
+
+### Creating an Admin User Manually
+
+Use the API (no admin signup exists in the UI):
+
+```bash
+curl -X POST http://localhost:3008/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@pizza.com",
@@ -229,33 +265,7 @@ curl -X POST http://localhost:5000/api/auth/signup \
   }'
 ```
 
-### Method 2: Sign up as user, then update in MongoDB Atlas
-
-1. Sign up normally through the UI
-2. Go to MongoDB Atlas dashboard
-3. Click "Browse Collections"
-4. Find the `users` collection
-5. Find your user document
-6. Edit the document and change `role` from `"user"` to `"admin"`
-7. Save changes
-
-### Method 3: Create in MongoDB directly
-
-1. Go to MongoDB Atlas dashboard
-2. Click "Browse Collections"
-3. Click "Insert Document" in the `users` collection
-4. Use this template (replace email and generate password hash):
-
-```json
-{
-  "email": "admin@pizza.com",
-  "password": "$2a$10$hashedPasswordHere",
-  "role": "admin",
-  "createdAt": {"$date": "2024-01-01T00:00:00.000Z"}
-}
-```
-
-**Note:** For testing, use Method 1 (API) as it's the easiest.
+Or change a user's role directly in Supabase Studio (http://localhost:54323) → `users` table → edit the `role` column.
 
 ---
 
@@ -308,6 +318,8 @@ curl -X POST http://localhost:5000/api/auth/signup \
 
 ## API Endpoints
 
+Interactive documentation (Swagger UI): `http://localhost:3008/api-docs`
+
 ### Authentication
 - `POST /api/auth/signup` - Register new user
 - `POST /api/auth/login` - Login user
@@ -346,7 +358,7 @@ Use any future expiry date, any 3-digit CVC, and any ZIP code.
 ### Testing Flow
 
 1. **User Flow:**
-   - Sign up as a user
+   - Sign up as a user (or login as `user1@example.com` / `user123`)
    - Browse menu at `/menu`
    - Add pizzas to cart
    - View cart at `/cart`
@@ -355,8 +367,7 @@ Use any future expiry date, any 3-digit CVC, and any ZIP code.
    - View order history at `/dashboard`
 
 2. **Admin Flow:**
-   - Create admin user (see instructions above)
-   - Login with admin credentials
+   - Login as `admin@pizza.com` / `admin123`
    - View dashboard at `/admin/dashboard`
    - Manage users at `/admin/users`
    - View/update orders at `/admin/orders`
@@ -365,6 +376,13 @@ Use any future expiry date, any 3-digit CVC, and any ZIP code.
 ---
 
 ## Deployment
+
+### Database (Supabase Cloud)
+
+1. Create a project at [supabase.com](https://supabase.com/)
+2. Link it: `supabase link --project-ref <your-project-ref>`
+3. Push the schema: `supabase db push`
+4. Update backend env vars to the cloud `SUPABASE_URL` and service key (Project Settings → API)
 
 ### Backend Deployment (Heroku example)
 
@@ -397,8 +415,9 @@ Use any future expiry date, any 3-digit CVC, and any ZIP code.
 ## Security Notes
 
 - Never commit `.env` files to version control
+- The Supabase **secret key** bypasses Row Level Security — keep it server-side only; never use it in the frontend
+- Both tables have RLS enabled with no public policies, so direct anon access to the database returns nothing
 - Use strong JWT secrets in production
-- Restrict MongoDB network access to specific IPs in production
 - Use Stripe live keys only in production
 - Enable HTTPS for production deployments
 - Implement rate limiting on all endpoints in production
@@ -409,38 +428,42 @@ Use any future expiry date, any 3-digit CVC, and any ZIP code.
 
 ## Troubleshooting
 
+### Supabase won't start
+- Make sure **Docker Desktop is running**
+- Run `supabase status` to see which services are up
+- Ports 54321-54324 must be free
+- Try `supabase stop` then `supabase start` again
+
 ### Backend won't start
-- Check MongoDB connection string is correct
-- Ensure MongoDB Atlas IP whitelist includes your IP
-- Verify all environment variables are set
-- Check if port 5000 is available
+- Verify `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `backend/.env` (get them from `supabase status`)
+- Ensure the local Supabase stack is running (`supabase start`)
+- Check if port 3008 is available
+- Error `Missing SUPABASE_URL or SUPABASE_SECRET_KEY` means the `.env` is incomplete
+
+### "Too many requests" (429) on login/signup
+- Auth routes are rate-limited to 10 requests per 15 minutes per IP
+- Restarting the backend resets the counter
 
 ### Frontend can't connect to backend
-- Verify backend is running on port 5000
+- Verify backend is running on port 3008
 - Check `REACT_APP_API_URL` in frontend `.env`
-- Check CORS settings in backend
+- Check CORS settings in backend (`FRONTEND_URL`)
 
 ### Stripe payments not working
 - Verify you're using test keys
-- Check Stripe keys are correctly set
+- Check Stripe keys are correctly set in `backend/.env`
 - Use test card numbers from Stripe docs
-- Check webhook secret is correct
-
-### MongoDB connection issues
-- Verify username/password in connection string
-- Check IP whitelist in MongoDB Atlas
-- Ensure cluster is running
-- Try connection from MongoDB Compass
+- For webhooks locally, use `stripe listen --forward-to http://localhost:3008/api/payments/webhook`
 
 ---
 
 ## Support
 
 For issues, please check:
-1. All environment variables are correctly set
-2. MongoDB Atlas is properly configured
+1. Docker Desktop is running and `supabase status` shows services up
+2. All environment variables are correctly set
 3. Stripe keys are in test mode
-4. Both servers are running
+4. Backend (port 3008) and frontend (port 3000) are both running
 
 ---
 

@@ -39,7 +39,7 @@ const { protect, admin } = require('../middleware/auth');
  */
 router.get('/users', protect, admin, async (req, res) => {
   try {
-    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    const users = await User.findAll();
 
     res.json({
       success: true,
@@ -119,15 +119,15 @@ router.put('/users/:id', protect, admin, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.role = role;
-    await user.save();
+    const updatedUser = await User.updateRole(req.params.id, role);
 
     res.json({
       success: true,
       user: {
-        id: user._id,
-        email: user.email,
-        role: user.role
+        id: updatedUser._id,
+        _id: updatedUser._id,
+        email: updatedUser.email,
+        role: updatedUser.role
       }
     });
   } catch (error) {
@@ -182,7 +182,7 @@ router.delete('/users/:id', protect, admin, async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete your own admin account' });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await User.deleteById(req.params.id);
 
     res.json({
       success: true,
@@ -229,9 +229,7 @@ router.delete('/users/:id', protect, admin, async (req, res) => {
  */
 router.get('/orders', protect, admin, async (req, res) => {
   try {
-    const orders = await Order.find({})
-      .populate('userId', 'email')
-      .sort({ createdAt: -1 });
+    const orders = await Order.findAll({ includeUser: true });
 
     res.json({
       success: true,
@@ -307,14 +305,13 @@ router.put('/orders/:id', protect, admin, async (req, res) => {
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    const existingOrder = await Order.findById(req.params.id);
 
-    if (!order) {
+    if (!existingOrder) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    order.paymentStatus = paymentStatus;
-    await order.save();
+    const order = await Order.update(req.params.id, { paymentStatus });
 
     res.json({
       success: true,
@@ -377,9 +374,7 @@ router.put('/orders/:id', protect, admin, async (req, res) => {
  */
 router.get('/payments', protect, admin, async (req, res) => {
   try {
-    const orders = await Order.find({ stripePaymentId: { $ne: null } })
-      .populate('userId', 'email')
-      .sort({ createdAt: -1 });
+    const orders = await Order.findWithPayment();
 
     const payments = orders.map(order => ({
       orderId: order._id,
@@ -445,10 +440,10 @@ router.get('/payments', protect, admin, async (req, res) => {
  */
 router.get('/stats', protect, admin, async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalOrders = await Order.countDocuments();
+    const totalUsers = await User.count();
+    const totalOrders = await Order.count();
 
-    const paidOrders = await Order.find({ paymentStatus: 'paid' });
+    const paidOrders = await Order.findPaid();
     const totalRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
     res.json({
