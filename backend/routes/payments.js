@@ -101,8 +101,7 @@ router.post('/create-checkout-session', protect, async (req, res) => {
       }
     });
 
-    order.stripeSessionId = session.id;
-    await order.save();
+    await Order.update(order._id, { stripeSessionId: session.id });
 
     res.json({
       success: true,
@@ -168,9 +167,10 @@ router.post('/webhook', async (req, res) => {
       const order = await Order.findById(orderId);
 
       if (order) {
-        order.paymentStatus = 'paid';
-        order.stripePaymentId = session.payment_intent;
-        await order.save();
+        await Order.update(order._id, {
+          paymentStatus: 'paid',
+          stripePaymentId: session.payment_intent
+        });
 
         console.log(`Order ${orderId} marked as paid`);
       }
