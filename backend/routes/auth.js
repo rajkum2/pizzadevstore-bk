@@ -86,7 +86,7 @@ router.post('/signup', authLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findByEmail(email);
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
@@ -105,6 +105,7 @@ router.post('/signup', authLimiter, async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
         role: user.role
       }
@@ -173,13 +174,13 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findByEmail(email, { includePassword: true });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const isPasswordMatch = await user.matchPassword(password);
+    const isPasswordMatch = await User.matchPassword(password, user.password);
 
     if (!isPasswordMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -192,6 +193,7 @@ router.post('/login', authLimiter, async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
         role: user.role
       }
