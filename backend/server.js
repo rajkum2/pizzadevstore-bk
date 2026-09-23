@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
-const connectDB = require('./config/db');
+
+// Validates SUPABASE_URL / SUPABASE_SECRET_KEY on startup (exits if missing)
+require('./config/supabase');
 
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
@@ -11,8 +13,6 @@ const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
-
-connectDB();
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
